@@ -1,0 +1,4 @@
+esphome:
+  name: ${device_name}
+  platform: ESP32
+  board: featheresp32

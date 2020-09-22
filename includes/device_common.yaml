@@ -1,0 +1,11 @@
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ${device_api_password}
+
+ota:
+  password: ${device_ota_password}
