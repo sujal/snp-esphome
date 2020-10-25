@@ -10,3 +10,4 @@
 /secrets.yaml
 pyvenv.cfg
 **/bin/
+adafruit_eink_featherwing.*
