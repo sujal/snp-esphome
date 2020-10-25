@@ -11,6 +11,21 @@ packages:
   wifi: !include includes/wifi_common.yaml
   device_common: !include includes/device_common.yaml
 
+esphome:
+  libraries:
+    - "FastLED GFX Library"
+
+api:
+  services:
+    - service: start_timer
+      variables:
+        red_color: float
+        green_color: float
+        blue_color: float
+        brightness: float
+      then:
+        - logger.log: Wowoowoow
+
 light:
   - platform: fastled_clockless
     chipset: NEOPIXEL
