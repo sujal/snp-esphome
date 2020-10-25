@@ -1,0 +1,44 @@
+substitutions:
+  device_name: snp_eink_1
+  device_fallback_ap_password: !secret eink_device_fallback_ap_password
+  device_api_password: !secret eink_device_api_password
+  device_ota_password: !secret eink_device_ota_password
+  wifi_ssid: !secret home_wifi_ssid
+  wifi_password: !secret home_wifi_password
+
+packages:
+  base: !include includes/feather_esp32_base.yaml
+  wifi: !include includes/wifi_common.yaml
+  device_common: !include includes/device_common.yaml
+
+esphome:
+  includes:
+    - adafruit_eink_featherwing.h
+  libraries:
+    - "Adafruit GFX Library"
+    - "Adafruit EPD"
+
+custom_component:
+  - lambda: |-
+      auto my_custom = new AdafruitEinkFeatherwing();
+      return {my_custom};
+
+i2c:
+
+# spi:
+#   clk_pin: 5
+#   mosi_pin: 18
+
+# display:
+#   - platform: waveshare_epaper
+#     cs_pin: D2
+#     dc_pin: D3
+#     model: 2.90in
+#     full_update_every: 30
+#     lambda: |-
+#       it.print(0, 0, id(font), "Hello World!");
+
+# font:
+#   - file: "font/Arial.ttf"
+#     id: arial_font
+#     size: 20

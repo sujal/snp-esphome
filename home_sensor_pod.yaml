@@ -1,0 +1,12 @@
+substitutions:
+  device_name: snp_hsp_1
+  device_fallback_ap_password: !secret hsp_device_fallback_ap_password
+  device_api_password: !secret hsp_device_api_password
+  device_ota_password: !secret hsp_device_ota_password
+  wifi_ssid: !secret home_wifi_ssid
+  wifi_password: !secret home_wifi_password
+
+packages:
+  base: !include includes/wemos_d1_base.yaml
+  wifi: !include includes/wifi_common.yaml
+  device_common: !include includes/device_common.yaml
