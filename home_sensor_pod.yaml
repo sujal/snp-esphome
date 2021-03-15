@@ -10,3 +10,28 @@ packages:
   base: !include includes/wemos_d1_base.yaml
   wifi: !include includes/wifi_common.yaml
   device_common: !include includes/device_common.yaml
+
+
+sensor:
+  - platform: dht
+    model: AM2302
+    pin:
+      number: D2
+      mode: INPUT_PULLUP
+    temperature:
+      name: "Entertainment Cabinet Temperature"
+    humidity:
+      name: "Entertainment Cabinet Humidity"
+    update_interval: 60s
+
+
+output:
+  platform: esp8266_pwm
+  pin: D3
+  frequency: 25000 Hz
+  id: pwm_output
+
+fan:
+  platform: speed
+  output: pwm_output
+  name: "Entertainment Cabinet Ventilation"
