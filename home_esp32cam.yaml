@@ -1,0 +1,43 @@
+substitutions:
+  device_name: snp-microcam-1
+  device_fallback_ap_password: !secret esp32cam_device_fallback_ap_password
+  device_api_password: !secret esp32cam_device_api_password
+  device_ota_password: !secret esp32cam_device_ota_password
+  wifi_ssid: !secret home_wifi_ssid
+  wifi_password: !secret home_wifi_password
+
+packages:
+  base: !include includes/esp32cam_base.yaml
+  wifi: !include includes/wifi_common.yaml
+  device_common: !include includes/device_common.yaml
+
+esp32_camera:
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+
+  # Image settings
+  name: $device_name Camera
+  idle_framerate: 0.5 fps
+  max_framerate: 15 fps
+  jpeg_quality: 18
+
+# Flashlight
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: gpio_4
+
+## GPIO_4 is the flash light pin
+light:
+  - platform: binary
+    output: gpio_4
+    name: $device_name light

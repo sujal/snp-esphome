@@ -1,0 +1,14 @@
+substitutions:
+  device_name: snp-microcam-2
+  device_fallback_ap_password: !secret microcam2_device_fallback_ap_password
+  device_api_password: !secret microcam2_device_api_password
+  device_ota_password: !secret microcam2_device_ota_password
+  wifi_ssid: !secret home_wifi_ssid
+  wifi_password: !secret home_wifi_password
+
+packages:
+  base: !include includes/esp32cam_base.yaml
+  wifi: !include includes/wifi_common.yaml
+  device_common: !include includes/device_common.yaml
+  microcam: !include includes/microcam_base.yaml
+
