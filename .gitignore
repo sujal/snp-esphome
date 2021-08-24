@@ -12,4 +12,6 @@ pyvenv.cfg
 **/bin/
 adafruit_eink_featherwing.*
 /.vscode
+/snp_*/**
+/snp-*/**
 
