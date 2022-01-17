@@ -1,0 +1,47 @@
+esphome:
+  name: ${device_name}
+  platform: ESP8266
+  board: esp01_1m
+
+logger:
+  baud_rate: 0 # (UART logging interferes with cse7766)
+
+# Device Specific Config
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "Sonoff S31 Button"
+    on_press:
+      - switch.toggle: relay
+  - platform: status
+    name: "Sonoff S31 Status"
+
+sensor:
+  - platform: wifi_signal
+    name: "Sonoff S31 WiFi Signal"
+    update_interval: 60s
+  - platform: cse7766
+    current:
+      name: "Sonoff S31 Current"
+      accuracy_decimals: 1
+    voltage:
+      name: "Sonoff S31 Voltage"
+      accuracy_decimals: 1
+    power:
+      name: "Sonoff S31 Power"
+      accuracy_decimals: 1
+switch:
+  - platform: gpio
+    name: "Sonoff S31 Relay"
+    pin: GPIO12
+    id: relay
+
+status_led:
+  pin: GPIO13
