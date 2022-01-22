@@ -1,0 +1,314 @@
+substitutions:
+  device_name: "snp-dashboard-1"
+  friendly_name: "Dashboard #1"
+  run_time: 24h
+  sleep_time: 15min # normal sleep time
+  night_sleep_time: 7h
+
+globals:
+  - id: current_page
+    restore_value: yes
+    initial_value: "1"
+    type: int
+  - id: updates_since_refresh
+    restore_value: yes
+    initial_value: "0"
+    type: int
+    
+esphome:
+  name: "${device_name}"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: !secret home_wifi_ssid
+  password: !secret home_wifi_password  
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Epaper T5 Fallback Hotspot"
+    password: !secret home_wifi_password
+
+captive_portal:
+
+time:
+  - platform: homeassistant
+    id: ntp
+    on_time_sync:
+      - then:
+        - component.update: sunrise
+        - component.update: sunset
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/vbaksa/esphome
+      ref: dev
+    components:
+      - lilygo_t5_47_battery 
+      - lilygo_t5_47_display
+ 
+sun:
+  latitude: 41.75744°
+  longitude: -72.75584°
+  
+font:
+  - file: "font/OpenSans/OpenSans-Bold.ttf"
+    id: font_name
+    size: 38
+    glyphs: |-
+      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: "font/OpenSans/OpenSans-Medium.ttf"
+    id: font_value
+    size: 56    
+    glyphs: |-
+      £!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  
+  - file: "font/OpenSans/OpenSans-Medium.ttf"
+    id: font_footer
+    size: 28    
+    glyphs: |-
+      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
+    id: weather_font
+    size: 160
+    glyphs: [
+      "\U000F0590",
+      "\U000F0F2F",
+      "\U000F0591",
+      "\U000F0592",
+      "\U000F0593",
+      "\U000F067E",
+      "\U000F0594",
+      "\U000F0595",
+      "\U000F0596",
+      "\U000F0597",
+      "\U000F0598",
+      "\U000F067F",
+      "\U000F0599",
+      "\U000F059D",
+      "\U000F059E"
+    ]
+  - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
+    id: font_icons_small
+    size: 56
+    glyphs:
+        - "\U000F02E3" # Bed
+        - "\U000F09A1" # Shower
+        - "\U000F09A0" # Bath
+        - "\U000F1104" # Monitor
+        - "\U000F0510" # temp
+        - "\U000F059D" # wind
+        - "\U000F0813" # btc
+        - "\U000F086A" # eth
+        - "\U000F116B" # sol
+        - "\U000F0A61" # ltc
+        - "\U000F0A43" # doge
+        - "\U000F0178" # xlm
+        - "\U000F0CE1" # up
+        - "\U000F0047" # down 
+        - "\U000F0FE1" # horizontal
+        - "\U000F059B" # sunset
+        - "\U000F059C" # sunrise
+  - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
+    id: font_icons_smaller
+    size: 40
+    glyphs:
+        - "\U000F0510" # temp
+        - "\U000F059D" # wind
+        - "\U000F059B" # sunset
+        - "\U000F059C" # sunrise
+
+script:
+  - id: refresh_display
+    then:
+      - repeat:
+          count: 1
+          then:
+          - display.page.show: page_black
+          - component.update: t5_display
+          - display.page.show: page_white
+          - component.update: t5_display
+      - lambda: id(updates_since_refresh) = 0;
+  - id: all_data_received
+    then:
+      - script.execute: show_page
+      - script.execute: enter_sleep
+
+  - id: show_page
+    then:
+      - if: 
+          condition:
+            lambda: return id(updates_since_refresh) >= 20;
+          then:
+            - script.execute: refresh_display
+      - if:
+          condition:
+            lambda: return id(current_page)==1;
+          then:
+            - display.page.show: page_temps
+          else:
+            - display.page.show: page_temps
+    
+      - component.update: t5_display
+      - lambda: |-
+          id(updates_since_refresh)++;
+
+  - id: enter_sleep
+    then:
+      - if:
+          condition:
+            binary_sensor.is_off: prevent_sleep
+          then:
+            
+            - if:
+                condition:
+                  lambda: |-
+                    return true;
+                then:
+                  - logger.log: "All data received. Calculating sleep duration..."
+                  - if:
+                      condition:
+                        lambda: |- 
+                          auto time = id(ntp).now();
+                          if (!time.is_valid()) { 
+                            return false;
+                          }
+                          return (time.hour < 6) || (time.hour > 23); 
+                      then:
+                        - logger.log: "It's nighttime, entering long sleep for ${night_sleep_time}"       
+                        - display.page.show: page_sleep
+                        - component.update: t5_display
+                        - deep_sleep.enter: 
+                            id: deep_sleep_1 
+                            sleep_duration: ${night_sleep_time}
+                      else:
+                        - logger.log: "It's daytime, entering short sleep for ${sleep_time}"             
+                        - deep_sleep.enter: 
+                            id: deep_sleep_1 
+                            sleep_duration: ${sleep_time}      
+                else:
+                  - logger.log: "Staying awake to wait for data..."
+          else:
+            - logger.log: "Prevent deep sleep enabled."
+
+
+
+text_sensor:
+  - platform: sun
+    id: sunrise
+    name: Sun Next Sunrise
+    type: sunrise
+    format: "%H:%M"
+    internal: true
+    update_interval: never
+  - platform: sun
+    id: sunset
+    name: Sun Next Sunset
+    type: sunset
+    format: "%H:%M"    
+    internal: true
+    update_interval: never
+  - platform: version
+    hide_timestamp: true
+    name: "${friendly_name} ESPHome Version"
+    entity_category: diagnostic
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP Address"
+      icon: mdi:wifi
+      entity_category: diagnostic
+    ssid:
+      name: "${friendly_name} Connected SSID"
+      icon: mdi:wifi-strength-2
+      entity_category: diagnostic
+
+binary_sensor:
+  - platform: homeassistant
+    id: prevent_sleep
+    entity_id: input_boolean.prevent_deep_sleep
+    on_state:
+      - if:
+          condition:
+            - binary_sensor.is_on: prevent_sleep
+          then:
+            - logger.log: "Automatic deep sleep disabled"
+            - deep_sleep.prevent: deep_sleep_1
+
+
+sensor:
+  - platform: lilygo_t5_47_battery
+    id: batt_volt
+    voltage:
+      name: "Battery Voltage"
+  - platform: template
+    name: "${friendly_name} Battery"
+    id: batt
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    lambda: |-
+      int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
+      if (y < 100) {return y;} else {return 100;};
+
+display:
+  - platform: lilygo_t5_47_display
+    id: t5_display
+    rotation: 180
+    full_update_every: 10
+    power_off_delay_enabled: true
+    update_interval: never
+    pages:
+      - id: page_white
+        lambda: |-
+          #define xres 960 
+          #define yres 540
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          it.print(xres/2, yres/2, id(font_name), COLOR_ON, TextAlign::CENTER, "Refreshing...");    
+      - id: page_black
+        lambda: |-
+          #define xres 960 
+          #define yres 540
+          it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
+          it.print(xres/2, yres/2, id(font_name), COLOR_OFF, TextAlign::CENTER, "Refreshing...");     
+      - id: page_sleep
+        lambda: |-
+          it.printf(10, 40, id(font_value), TextAlign::TOP_LEFT, "ZZZ zzz...");
+      - id: page_temps
+        lambda: |-          
+          #define xres 960 
+          #define yres 540
+          #define x_pad 10 // border padding
+          #define y_pad 10 // border padding      
+          
+          #define y1 0
+          #define y2 285
+          #define y3 425
+          #define val_pad 60 // padding before value
+          #define x1 x_pad // x position 1st column name
+          #define x2 ((xres/3) * 1) // x position 2nd column name
+          #define x3 ((xres/3) * 2) // x position 3rd column name
+          
+          // Footer
+          it.filled_rectangle(0, yres-30, xres, yres);
+          it.strftime(x_pad, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_LEFT, "%A %d/%b/%Y", id(ntp).now());
+          it.strftime(xres/2, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_CENTER, "Updated %H:%M", id(ntp).now());
+          it.printf(xres-x_pad, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_RIGHT, "%.2fV/%.0f%%", id(batt_volt).voltage->state, id(batt).state);
+
+deep_sleep:
+  run_duration: ${run_time} 
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+  esp32_ext1_wakeup:
+    pins: GPIO39
+    mode: ALL_LOW          
