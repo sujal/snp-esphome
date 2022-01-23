@@ -12,7 +12,7 @@ globals:
     type: int
   - id: updates_since_refresh
     restore_value: yes
-    initial_value: "0"
+    initial_value: "21"
     type: int
     
 esphome:
@@ -25,6 +25,7 @@ esp32:
 
 # Enable logging
 logger:
+  level: DEBUG
 
 # Enable Home Assistant API
 api:
@@ -142,9 +143,9 @@ script:
       - lambda: id(updates_since_refresh) = 0;
   - id: all_data_received
     then:
+      - logger.log: "all_data_received called"
       - script.execute: show_page
       - script.execute: enter_sleep
-
   - id: show_page
     then:
       - if: 
@@ -174,7 +175,11 @@ script:
             - if:
                 condition:
                   lambda: |-
-                    return true;
+                    if (strlen(id(weather_today_condition).state.c_str())>0 &&
+                        id(outdoor_temperature).has_state()) {
+                      return true;
+                    }
+                    return false;
                 then:
                   - logger.log: "All data received. Calculating sleep duration..."
                   - if:
@@ -223,6 +228,14 @@ text_sensor:
     hide_timestamp: true
     name: "${friendly_name} ESPHome Version"
     entity_category: diagnostic
+  - platform: homeassistant
+    id: weather_today_condition
+    entity_id: sensor.weather_condition
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for home weather station condition."
+        - script.execute: all_data_received    
   - platform: wifi_info
     ip_address:
       name: "${friendly_name} IP Address"
@@ -234,6 +247,12 @@ text_sensor:
       entity_category: diagnostic
 
 binary_sensor:
+  - platform: gpio
+    pin: GPIO34
+    name: "Temps Page"
+    on_press:
+      then:
+        - lambda: 'id(current_page) = 1;'
   - platform: homeassistant
     id: prevent_sleep
     entity_id: input_boolean.prevent_deep_sleep
@@ -244,6 +263,10 @@ binary_sensor:
           then:
             - logger.log: "Automatic deep sleep disabled"
             - deep_sleep.prevent: deep_sleep_1
+
+switch:
+  - platform: restart
+    name: "${friendly_name} Restart"
 
 
 sensor:
@@ -260,11 +283,17 @@ sensor:
     lambda: |-
       int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
       if (y < 100) {return y;} else {return 100;};
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.home_weather_station_temp
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for home weather station temp."
+        - script.execute: all_data_received
 
 display:
   - platform: lilygo_t5_47_display
     id: t5_display
-    rotation: 180
     full_update_every: 10
     power_off_delay_enabled: true
     update_interval: never
@@ -298,7 +327,7 @@ display:
           #define x1 x_pad // x position 1st column name
           #define x2 ((xres/3) * 1) // x position 2nd column name
           #define x3 ((xres/3) * 2) // x position 3rd column name
-          
+
           // Footer
           it.filled_rectangle(0, yres-30, xres, yres);
           it.strftime(x_pad, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_LEFT, "%A %d/%b/%Y", id(ntp).now());
