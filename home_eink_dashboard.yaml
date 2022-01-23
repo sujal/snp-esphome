@@ -29,16 +29,18 @@ logger:
 
 # Enable Home Assistant API
 api:
+  password: !secret dashboard_1_api_password
 
 ota:
+  password: !secret dashboard_1_ota_password
 
 wifi:
   ssid: !secret home_wifi_ssid
   password: !secret home_wifi_password  
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Epaper T5 Fallback Hotspot"
-    password: !secret home_wifi_password
+    ssid: "Dashboard 1 Fallback Hotspot"
+    password: !secret dashboard_1_fallback_ap_password
 
 captive_portal:
 
@@ -58,6 +60,7 @@ external_components:
     components:
       - lilygo_t5_47_battery 
       - lilygo_t5_47_display
+    refresh: 1s
  
 sun:
   latitude: 41.75744°
@@ -74,10 +77,14 @@ font:
     size: 56    
     glyphs: |-
       £!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
-  
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_footer
     size: 28    
+    glyphs: |-
+      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: "font/OpenSans/OpenSans-Light.ttf"
+    id: font_section_title
+    size: 30
     glyphs: |-
       !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
@@ -189,7 +196,7 @@ script:
                           if (!time.is_valid()) { 
                             return false;
                           }
-                          return (time.hour < 6) || (time.hour > 23); 
+                          return (time.hour < 6) && (time.hour > 1); 
                       then:
                         - logger.log: "It's nighttime, entering long sleep for ${night_sleep_time}"       
                         - display.page.show: page_sleep
@@ -235,7 +242,6 @@ text_sensor:
     on_value: # Actions to perform once data for the last sensor has been received
       then:
         - logger.log: "received value for home weather station condition."
-        - script.execute: all_data_received    
   - platform: wifi_info
     ip_address:
       name: "${friendly_name} IP Address"
@@ -258,7 +264,7 @@ binary_sensor:
     name: "Clear Screen"
     on_press:
       then:
-        - script.execute: all_data_received
+        - script.execute: refresh_display
   - platform: homeassistant
     id: prevent_sleep
     entity_id: input_boolean.prevent_deep_sleep
@@ -308,13 +314,44 @@ sensor:
     on_value: # Actions to perform once data for the last sensor has been received
       then:
         - logger.log: "received value for home weather station temp."
+  - platform: homeassistant
+    id: disney_stock
+    entity_id: sensor.stock_quote_disney
+    on_value:
+      then:
+        - logger.log: "received Disney stock quote"
+  # - platform: homeassistant
+  #   id: confluent_stock
+  #   entity_id: sensor.stock_quote_confluent
+  #   on_value:
+  #     then:
+  #       - logger.log: "received Confluent stock quote"
+  - platform: homeassistant
+    id: apple_stock
+    entity_id: sensor.stock_quote_apple
+    on_value:
+      then:
+        - logger.log: "received Apple stock quote"
+  # - platform: homeassistant
+  #   id: shopify_stock
+  #   entity_id: sensor.stock_quote_shopify
+  #   on_value:
+  #     then:
+  #       - logger.log: "received Shopify stock quote"
+  #       - script.execute: all_data_received
+  - platform: homeassistant
+    id: weather_temperature
+    entity_id: sensor.home_weather_station_temp
+    on_value:
+      then:
+        - logger.log: "Received Weather Temp"
         - script.execute: all_data_received
 
 display:
   - platform: lilygo_t5_47_display
     id: t5_display
-    full_update_every: 1
-    power_off_delay_enabled: true
+    power_off_delay_enabled: true  
+    clear: false
     update_interval: never
     pages:
       - id: page_white
@@ -336,9 +373,12 @@ display:
         lambda: |-          
           #define xres 960 
           #define yres 540
-          #define x_pad 10 // border padding
-          #define y_pad 10 // border padding      
-          
+          #define gridsize 30
+          #define x_pad gridsize*1.5 // border padding
+          #define y_pad gridsize     // border padding      
+          #define statux_x_pad 10
+          #define status_y_pad 10
+
           #define y1 0
           #define y2 285
           #define y3 425
@@ -347,11 +387,43 @@ display:
           #define x2 ((xres/3) * 1) // x position 2nd column name
           #define x3 ((xres/3) * 2) // x position 3rd column name
 
+          //draw clear background (forces whole display to redraw)
+          it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
+          it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
+
+          // weather label
+          it.print(x_pad+5.5*gridsize, y_pad+(0.5*gridsize), id(font_section_title), COLOR_ON, TextAlign::CENTER, "WEATHER");          
+
+          // draw temperature
+          it.printf(x_pad+(5*gridsize), y_pad+gridsize*2.5, id(font_value), COLOR_ON, TextAlign::TOP_LEFT, "%0.1f °F", id(weather_temperature).state);
+
+          // weather - icon
+          if (id(weather_today_condition).has_state()) {
+            std::map<std::string, std::string> weather_map { 
+              { "cloudy", "\U000F0590" },              
+              { "exceptional", "\U000F0F2F" },          
+              { "fog", "\U000F0591" },                 
+              { "hail", "\U000F0592" },                
+              { "lightning", "\U000F0593" },            
+              { "lightning_rainy", "\U000F067E" },      
+              { "clearnight", "\U000F0594" },         
+              { "partlycloudy", "\U000F0595" },         
+              { "pouring", "\U000F0596"},             
+              { "rainy", "\U000F0597" },                
+              { "snowy", "\U000F0598" },               
+              { "snowyrainy", "\U000F067F" },           
+              { "sunny", "\U000F0599" },                  
+              { "windy", "\U000F059D" },               
+              { "windyvariant", "\U000F059E" }         
+            };   
+            it.printf(x_pad+(2*gridsize), (2.5*y_pad+1.5*gridsize), id(weather_font), COLOR_ON, TextAlign::CENTER, weather_map[id(weather_today_condition).state.c_str()].c_str());
+          };
+
           // Footer
           it.filled_rectangle(0, yres-30, xres, yres);
-          it.strftime(x_pad, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_LEFT, "%A %d/%b/%Y", id(ntp).now());
-          it.strftime(xres/2, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_CENTER, "Updated %H:%M", id(ntp).now());
-          it.printf(xres-x_pad, yres-y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_RIGHT, "%.2fV/%.0f%%", id(batt_volt).voltage->state, id(batt).state);
+          it.strftime(statux_x_pad, yres-status_y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_LEFT, "%A %d/%b/%Y", id(ntp).now());
+          it.strftime(xres/2, yres-status_y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_CENTER, "Updated %H:%M", id(ntp).now());
+          it.printf(xres-statux_x_pad, yres-status_y_pad/2, id(font_footer), COLOR_OFF, TextAlign::BASELINE_RIGHT, "%.2fV/%.0f%%", id(batt_volt).voltage->state, id(batt).state);
 
 deep_sleep:
   run_duration: ${run_time} 
