@@ -253,6 +253,12 @@ binary_sensor:
     on_press:
       then:
         - lambda: 'id(current_page) = 1;'
+  - platform: gpio
+    pin: GPIO35
+    name: "Clear Screen"
+    on_press:
+      then:
+        - script.execute: all_data_received
   - platform: homeassistant
     id: prevent_sleep
     entity_id: input_boolean.prevent_deep_sleep
@@ -267,7 +273,20 @@ binary_sensor:
 switch:
   - platform: restart
     name: "${friendly_name} Restart"
-
+  - platform: template
+    name: "Prevent Deep Sleep"
+    lambda: |-
+      if (id(prevent_sleep).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - lambda: |-
+          id(prevent_sleep).publish_state(true);
+    turn_off_action:
+      - lambda: |-
+          id(prevent_sleep).publish_state(true);
 
 sensor:
   - platform: lilygo_t5_47_battery
@@ -294,7 +313,7 @@ sensor:
 display:
   - platform: lilygo_t5_47_display
     id: t5_display
-    full_update_every: 10
+    full_update_every: 1
     power_off_delay_enabled: true
     update_interval: never
     pages:
