@@ -71,22 +71,32 @@ font:
     id: font_name
     size: 38
     glyphs: |-
-      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_value
     size: 56    
     glyphs: |-
-      £!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      £$!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_footer
     size: 28    
     glyphs: |-
-      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Light.ttf"
     id: font_section_title
     size: 30
     glyphs: |-
-      !"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: "font/OpenSans/OpenSans-Regular.ttf"
+    id: font_small_label
+    size: 20
+    glyphs: |-
+      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: "font/OpenSans/OpenSans-Medium.ttf"
+    id: font_small_value
+    size: 42
+    glyphs: |-
+      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
     id: weather_font
     size: 160
@@ -183,7 +193,12 @@ script:
                 condition:
                   lambda: |-
                     if (strlen(id(weather_today_condition).state.c_str())>0 &&
-                        id(outdoor_temperature).has_state()) {
+                        id(outdoor_temperature).has_state() &&
+                        id(living_room_temp).has_state() &&
+                        id(downstairs_temp).has_state() &&
+                        id(extension_temp).has_state() &&
+                        id(parents_room_temp).has_state() &&
+                        id(inr_exchange_rate).has_state()) {
                       return true;
                     }
                     return false;
@@ -308,30 +323,39 @@ sensor:
     lambda: |-
       int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
       if (y < 100) {return y;} else {return 100;};
+
   - platform: homeassistant
-    id: outdoor_temperature
-    entity_id: sensor.home_weather_station_temp
-    on_value: # Actions to perform once data for the last sensor has been received
+    id: next_event_on_calendar
+    entity: calendar.sujal
+    internal: true
+    on_value:
       then:
-        - logger.log: "received value for home weather station temp."
+        - logger.log: "received calendar for sujal calendar"
+
   - platform: homeassistant
     id: disney_stock
     entity_id: sensor.stock_quote_disney
     on_value:
       then:
         - logger.log: "received Disney stock quote"
+  - platform: homeassistant
+    id: inr_exchange_rate
+    entity_id: sensor.usd_to_inr
+    on_value:
+      then:
+        - logger.log: "received FX info for INR"
   # - platform: homeassistant
   #   id: confluent_stock
   #   entity_id: sensor.stock_quote_confluent
   #   on_value:
   #     then:
   #       - logger.log: "received Confluent stock quote"
-  - platform: homeassistant
-    id: apple_stock
-    entity_id: sensor.stock_quote_apple
-    on_value:
-      then:
-        - logger.log: "received Apple stock quote"
+  # - platform: homeassistant
+  #   id: apple_stock
+  #   entity_id: sensor.stock_quote_apple
+  #   on_value:
+  #     then:
+  #       - logger.log: "received Apple stock quote"
   # - platform: homeassistant
   #   id: shopify_stock
   #   entity_id: sensor.stock_quote_shopify
@@ -339,6 +363,41 @@ sensor:
   #     then:
   #       - logger.log: "received Shopify stock quote"
   #       - script.execute: all_data_received
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.home_weather_station_temp
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for home weather station temp."
+  - platform: homeassistant
+    id: living_room_temp
+    entity_id: sensor.official_livingroom_temp
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for living room temp."
+  - platform: homeassistant
+    id: downstairs_temp
+    entity_id: sensor.official_downstairs_temp
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for downstairs temp."
+  - platform: homeassistant
+    id: extension_temp
+    entity_id: sensor.official_extension_temp
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for extension temp."
+  - platform: homeassistant
+    id: parents_room_temp
+    entity_id: sensor.official_parents_room_temp
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - logger.log: "received value for parents room temp"
+        - script.execute: all_data_received
   - platform: homeassistant
     id: weather_temperature
     entity_id: sensor.home_weather_station_temp
@@ -379,23 +438,35 @@ display:
           #define statux_x_pad 10
           #define status_y_pad 10
 
-          #define y1 0
-          #define y2 285
-          #define y3 425
-          #define val_pad 60 // padding before value
-          #define x1 x_pad // x position 1st column name
-          #define x2 ((xres/3) * 1) // x position 2nd column name
-          #define x3 ((xres/3) * 2) // x position 3rd column name
+          // CONSTANTS for LEFT PORTION
+          #define temps_center_x (x_pad+5.5*gridsize)
+          #define temps_column_1_center_x (x_pad+((0.5+3.5/2)*gridsize))
+          #define temps_column_2_center_x (x_pad+((6.5+3.5/2)*gridsize))
+          #define level_1_header_center_y y_pad+(0.5*gridsize) 
+          #define level_2_header_center_y y_pad+(7*gridsize)
+
+          // CONSTANTS for RIGHT PORTION
+          #define infotainment_center_x (xres - x_pad - (16/2*gridsize))
+          #define info_column_1_center_x (17*gridsize+(5/2*gridsize))
+          #define info_column_2_center_x (24*gridsize+(5/2*gridsize)) 
+          #define info_column_trading_center_y (y_pad+3.5*gridsize)
+          #define info_column_trading_label_baseline_y (y_pad+5.5*gridsize)
 
           //draw clear background (forces whole display to redraw)
           it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
           it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
 
+          // DEBUG STUFF
+          it.line(x_pad, y_pad+1.5*gridsize, 13*gridsize, y_pad+1.5*gridsize);
+          it.line(x_pad+13*gridsize, y_pad+1.5*gridsize, xres-x_pad, y_pad+1.5*gridsize);
+
+          // WEATHER SECTION --------------
+
           // weather label
-          it.print(x_pad+5.5*gridsize, y_pad+(0.5*gridsize), id(font_section_title), COLOR_ON, TextAlign::CENTER, "WEATHER");          
+          it.print(temps_center_x, level_1_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "WEATHER");
 
           // draw temperature
-          it.printf(x_pad+(5*gridsize), y_pad+gridsize*2.5, id(font_value), COLOR_ON, TextAlign::TOP_LEFT, "%0.1f °F", id(weather_temperature).state);
+          it.printf(x_pad+(5*gridsize), y_pad+gridsize*3, id(font_value), COLOR_ON, TextAlign::TOP_LEFT, "%0.1f °F", id(weather_temperature).state);
 
           // weather - icon
           if (id(weather_today_condition).has_state()) {
@@ -416,8 +487,47 @@ display:
               { "windy", "\U000F059D" },               
               { "windyvariant", "\U000F059E" }         
             };   
-            it.printf(x_pad+(2*gridsize), (2.5*y_pad+1.5*gridsize), id(weather_font), COLOR_ON, TextAlign::CENTER, weather_map[id(weather_today_condition).state.c_str()].c_str());
+            it.printf(x_pad+(2*gridsize), (3*y_pad+2*gridsize), id(weather_font), COLOR_ON, TextAlign::CENTER, weather_map[id(weather_today_condition).state.c_str()].c_str());
           };
+
+          // END WEATHER SECTION --------------
+
+          // INDOOR SECTION
+
+          // indoor section label
+          it.print(temps_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "INDOOR");          
+          
+          it.printf(temps_column_1_center_x, y_pad+9*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(living_room_temp).state);
+          it.print(temps_column_1_center_x, y_pad+11*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "LIVING ROOM");
+          it.printf(temps_column_2_center_x, y_pad+9*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(downstairs_temp).state);
+          it.print(temps_column_2_center_x, y_pad+11*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOWNSTAIRS");
+
+          it.printf(temps_column_1_center_x, y_pad+13*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(extension_temp).state);
+          it.print(temps_column_1_center_x, y_pad+15*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "REC ROOM");
+          it.printf(temps_column_2_center_x, y_pad+13*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(parents_room_temp).state);
+          it.print(temps_column_2_center_x, y_pad+15*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "PARENTS");
+
+          // END INDOOR SECTION
+
+          // BEGIN INFOTAINMENT SECTION 
+
+          // Info Section Label
+          it.print(infotainment_center_x, level_1_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "TRADING");
+         
+          it.printf(info_column_1_center_x, info_column_trading_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "$%0.2f", id(disney_stock).state);
+          it.print(info_column_1_center_x, info_column_trading_label_baseline_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DIS");
+          it.printf(info_column_2_center_x, info_column_trading_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.2f", id(inr_exchange_rate).state);
+          it.print(info_column_2_center_x, info_column_trading_label_baseline_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "USD to INR");
+
+
+          // END INFOTAINMENT SECTION
+
+          // BEGIN BOTTOM Section
+          it.print(infotainment_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "HOUSE");
+
+
+
+          // END BOTTOM Section
 
           // Footer
           it.filled_rectangle(0, yres-30, xres, yres);
