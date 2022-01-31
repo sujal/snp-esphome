@@ -3,7 +3,7 @@ substitutions:
   friendly_name: "Dashboard #1"
   run_time: 24h
   sleep_time: 15min # normal sleep time
-  night_sleep_time: 7h
+  night_sleep_time: 8h
 
 globals:
   - id: current_page
@@ -71,32 +71,37 @@ font:
     id: font_name
     size: 38
     glyphs: |-
-      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_value
     size: 56    
     glyphs: |-
-      £$!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      £#$!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_footer
     size: 28    
     glyphs: |-
-      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+  - file: "font/OpenSans/OpenSans-Bold.ttf"
+    id: font_calendar_time_label
+    size: 24
+    glyphs: |-
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Light.ttf"
     id: font_section_title
     size: 30
     glyphs: |-
-      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Regular.ttf"
     id: font_small_label
     size: 20
     glyphs: |-
-      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_small_value
     size: 42
     glyphs: |-
-      !$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: 'font/MaterialDesign-Webfont-master/fonts/materialdesignicons-webfont.ttf'
     id: weather_font
     size: 160
@@ -211,7 +216,7 @@ script:
                           if (!time.is_valid()) { 
                             return false;
                           }
-                          return (time.hour < 6) && (time.hour > 1); 
+                          return (time.hour < 6) && (time.hour >= 22); 
                       then:
                         - logger.log: "It's nighttime, entering long sleep for ${night_sleep_time}"       
                         - display.page.show: page_sleep
@@ -266,6 +271,49 @@ text_sensor:
       name: "${friendly_name} Connected SSID"
       icon: mdi:wifi-strength-2
       entity_category: diagnostic
+  - platform: homeassistant
+    id: dow_jones_index_quote
+    entity_id: sensor.dji_quote_value_display
+    on_value:
+      then:
+        - logger.log: "received Dow Jones Index quote"
+  - platform: homeassistant
+    id: dow_jones_index_delta
+    entity_id: sensor.dji_quote_delta_display
+    on_value:
+      then:
+        - logger.log: "received Dow Jones Index delta"
+  - platform: homeassistant
+    id: nasdaq_index_quote
+    entity_id: sensor.nasdaq_quote_value_display
+    on_value:
+      then:
+        - logger.log: "received NASDAQ index quote"
+  - platform: homeassistant
+    id: nasdaq_index_delta
+    entity_id: sensor.nasdaq_quote_delta_display
+    on_value:
+      then:
+        - logger.log: "received NASDAQ Index delta"
+  - platform: homeassistant
+    id: disney_stock
+    entity_id: sensor.disney_stock_display
+    on_value:
+      then:
+        - logger.log: "received Disney stock quote"
+  - platform: homeassistant
+    id: next_calendar_item_title
+    entity_id: sensor.home_calendar_next_event_title
+    on_value:
+      then:
+        - logger.log: "received calendar title"
+  - platform: homeassistant
+    id: next_calendar_item_time
+    entity_id: sensor.home_calendar_next_event_time_string
+    on_value:
+      then:
+        - logger.log: "received calendar time"
+
 
 binary_sensor:
   - platform: gpio
@@ -326,18 +374,12 @@ sensor:
 
   - platform: homeassistant
     id: next_event_on_calendar
-    entity: calendar.sujal
+    entity_id: calendar.sujal
     internal: true
     on_value:
       then:
         - logger.log: "received calendar for sujal calendar"
 
-  - platform: homeassistant
-    id: disney_stock
-    entity_id: sensor.stock_quote_disney
-    on_value:
-      then:
-        - logger.log: "received Disney stock quote"
   - platform: homeassistant
     id: inr_exchange_rate
     entity_id: sensor.usd_to_inr
@@ -371,7 +413,7 @@ sensor:
         - logger.log: "received value for home weather station temp."
   - platform: homeassistant
     id: living_room_temp
-    entity_id: sensor.official_livingroom_temp
+    entity_id: sensor.official_living_room_temp
     internal: true
     on_value: # Actions to perform once data for the last sensor has been received
       then:
@@ -445,12 +487,22 @@ display:
           #define level_1_header_center_y y_pad+(0.5*gridsize) 
           #define level_2_header_center_y y_pad+(7*gridsize)
 
+          #define level_2_row_1_center_y       y_pad+9*gridsize
+          #define level_2_row_1_label_center_y y_pad+11*gridsize
+          #define level_2_row_2_center_y       y_pad+13*gridsize
+          #define level_2_row_2_label_center_y y_pad+15*gridsize
+
+
+
           // CONSTANTS for RIGHT PORTION
           #define infotainment_center_x (xres - x_pad - (16/2*gridsize))
           #define info_column_1_center_x (17*gridsize+(5/2*gridsize))
           #define info_column_2_center_x (24*gridsize+(5/2*gridsize)) 
-          #define info_column_trading_center_y (y_pad+3.5*gridsize)
-          #define info_column_trading_label_baseline_y (y_pad+5.5*gridsize)
+          #define info_column_row1_center_y (y_pad+3.5*gridsize)
+          #define info_column_row1_label_baseline_y (y_pad+5.5*gridsize)
+          #define level_1_full_width_sublabel_baseline_center_y (y_pad+3.75*gridsize)
+          #define level_1_full_width_label_center_y (y_pad+4.5*gridsize)
+          #define level_1_full_width_centered_single_label_y (y_pad+4*gridsize)
 
           //draw clear background (forces whole display to redraw)
           it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
@@ -477,7 +529,7 @@ display:
               { "hail", "\U000F0592" },                
               { "lightning", "\U000F0593" },            
               { "lightning_rainy", "\U000F067E" },      
-              { "clearnight", "\U000F0594" },         
+              { "clear-night", "\U000F0594" },         
               { "partlycloudy", "\U000F0595" },         
               { "pouring", "\U000F0596"},             
               { "rainy", "\U000F0597" },                
@@ -497,37 +549,47 @@ display:
           // indoor section label
           it.print(temps_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "INDOOR");          
           
-          it.printf(temps_column_1_center_x, y_pad+9*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(living_room_temp).state);
-          it.print(temps_column_1_center_x, y_pad+11*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "LIVING ROOM");
-          it.printf(temps_column_2_center_x, y_pad+9*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(downstairs_temp).state);
-          it.print(temps_column_2_center_x, y_pad+11*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOWNSTAIRS");
+          it.printf(temps_column_1_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(living_room_temp).state);
+          it.print(temps_column_1_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "LIVING ROOM");
+          it.printf(temps_column_2_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(downstairs_temp).state);
+          it.print(temps_column_2_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOWNSTAIRS");
 
-          it.printf(temps_column_1_center_x, y_pad+13*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(extension_temp).state);
-          it.print(temps_column_1_center_x, y_pad+15*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "REC ROOM");
-          it.printf(temps_column_2_center_x, y_pad+13*gridsize, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(parents_room_temp).state);
-          it.print(temps_column_2_center_x, y_pad+15*gridsize, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "PARENTS");
+          it.printf(temps_column_1_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(extension_temp).state);
+          it.print(temps_column_1_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "REC ROOM");
+          it.printf(temps_column_2_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(parents_room_temp).state);
+          it.print(temps_column_2_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "PARENTS");
 
           // END INDOOR SECTION
 
-          // BEGIN INFOTAINMENT SECTION 
-
-          // Info Section Label
-          it.print(infotainment_center_x, level_1_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "TRADING");
-         
-          it.printf(info_column_1_center_x, info_column_trading_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "$%0.2f", id(disney_stock).state);
-          it.print(info_column_1_center_x, info_column_trading_label_baseline_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DIS");
-          it.printf(info_column_2_center_x, info_column_trading_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.2f", id(inr_exchange_rate).state);
-          it.print(info_column_2_center_x, info_column_trading_label_baseline_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "USD to INR");
-
-
-          // END INFOTAINMENT SECTION
 
           // BEGIN BOTTOM Section
-          it.print(infotainment_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "HOUSE");
+          it.print(infotainment_center_x, level_1_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "NEXT EVENT");
 
-
+          if (strlen(id(next_calendar_item_time).state.c_str()) > 0) {
+            it.print(infotainment_center_x, level_1_full_width_sublabel_baseline_center_y, id(font_calendar_time_label), COLOR_ON, TextAlign::BASELINE_CENTER, id(next_calendar_item_time).state.c_str());
+            it.print(infotainment_center_x, level_1_full_width_label_center_y, id(font_footer), COLOR_ON, TextAlign::CENTER, id(next_calendar_item_title).state.c_str());
+          } else {
+            it.print(infotainment_center_x, level_1_full_width_centered_single_label_y, id(font_footer), COLOR_ON, TextAlign::CENTER, id(next_calendar_item_title).state.c_str());
+          }
 
           // END BOTTOM Section
+
+          // BEGIN TRADING SECTION 
+
+          // Info Section Label
+          it.print(infotainment_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "TRADING");
+         
+          it.print(info_column_1_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, id(disney_stock).state.c_str());
+          it.print(info_column_1_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DIS");
+          it.printf(info_column_2_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.2f", id(inr_exchange_rate).state);
+          it.print(info_column_2_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "USD to INR");
+
+          it.print(info_column_1_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, id(dow_jones_index_delta).state.c_str());
+          it.print(info_column_1_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOW");
+          it.print(info_column_2_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, id(nasdaq_index_delta).state.c_str());
+          it.print(info_column_2_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "NASDAQ");
+
+          // END TRADING SECTION
 
           // Footer
           it.filled_rectangle(0, yres-30, xres, yres);
