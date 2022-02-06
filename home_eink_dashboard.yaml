@@ -3,7 +3,9 @@ substitutions:
   friendly_name: "Dashboard #1"
   run_time: 24h
   sleep_time: 15min # normal sleep time
-  night_sleep_time: 8h
+  night_sleep_time: "8"
+  morning_start_time: "6"
+  night_start_time: "22"
 
 globals:
   - id: current_page
@@ -203,7 +205,8 @@ script:
                         id(downstairs_temp).has_state() &&
                         id(extension_temp).has_state() &&
                         id(parents_room_temp).has_state() &&
-                        id(inr_exchange_rate).has_state()) {
+                        id(inr_exchange_rate).has_state() &&
+                        id(total_gaming_time).has_state()) {
                       return true;
                     }
                     return false;
@@ -216,14 +219,26 @@ script:
                           if (!time.is_valid()) { 
                             return false;
                           }
-                          return (time.hour < 6) && (time.hour >= 22); 
+                          return (time.hour < ${morning_start_time}) && (time.hour >= ${night_start_time}); 
                       then:
                         - logger.log: "It's nighttime, entering long sleep for ${night_sleep_time}"       
                         - display.page.show: page_sleep
                         - component.update: t5_display
+                        - lambda: |-
+                            auto sleep_interval = ${night_sleep_time};
+                            auto time = id(ntp).now();
+                            if (time.is_valid()) {
+                              if (time.hour > ${night_start_time}) {
+                                sleep_interval = (24 - time.hour) + ${morning_start_time};
+                              } else if (time.hour < ${morning_start_time}) {
+                                sleep_interval = (${morning_start_time} - time.hour);
+                              } else {
+                                // unknown situation... should probably log.
+                              }
+                            }
+                            id(deep_sleep_1).set_sleep_duration(sleep_interval*60*60*1000);
                         - deep_sleep.enter: 
                             id: deep_sleep_1 
-                            sleep_duration: ${night_sleep_time}
                       else:
                         - logger.log: "It's daytime, entering short sleep for ${sleep_time}"             
                         - deep_sleep.enter: 
@@ -313,7 +328,18 @@ text_sensor:
     on_value:
       then:
         - logger.log: "received calendar time"
-
+  - platform: homeassistant
+    id: total_streaming_time
+    entity_id: sensor.total_streaming_time
+    on_value:
+      then:
+        - logger.log: "Total streaming time received"
+  - platform: homeassistant
+    id: total_gaming_time
+    entity_id: sensor.total_gaming_time
+    on_value:
+      then:
+        - logger.log: "Total gaming time received"
 
 binary_sensor:
   - platform: gpio
@@ -509,8 +535,8 @@ display:
           it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
 
           // DEBUG STUFF
-          it.line(x_pad, y_pad+1.5*gridsize, 13*gridsize, y_pad+1.5*gridsize);
-          it.line(x_pad+13*gridsize, y_pad+1.5*gridsize, xres-x_pad, y_pad+1.5*gridsize);
+          // it.line(x_pad, y_pad+1.5*gridsize, 13*gridsize, y_pad+1.5*gridsize);
+          // it.line(x_pad+13*gridsize, y_pad+1.5*gridsize, xres-x_pad, y_pad+1.5*gridsize);
 
           // WEATHER SECTION --------------
 
@@ -547,17 +573,17 @@ display:
           // INDOOR SECTION
 
           // indoor section label
-          it.print(temps_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "INDOOR");          
+          it.print(temps_center_x, level_2_header_center_y, id(font_section_title), COLOR_ON, TextAlign::CENTER, "HOUSE");          
           
-          it.printf(temps_column_1_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(living_room_temp).state);
-          it.print(temps_column_1_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "LIVING ROOM");
-          it.printf(temps_column_2_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(downstairs_temp).state);
-          it.print(temps_column_2_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOWNSTAIRS");
+          it.print(temps_column_1_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, id(total_streaming_time).state.c_str());
+          it.print(temps_column_1_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "TV STREAMING");
+          it.printf(temps_column_2_center_x, level_2_row_1_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, id(total_gaming_time).state.c_str());
+          it.print(temps_column_2_center_x, level_2_row_1_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "TV GAMING");
 
           it.printf(temps_column_1_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(extension_temp).state);
           it.print(temps_column_1_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "REC ROOM");
-          it.printf(temps_column_2_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(parents_room_temp).state);
-          it.print(temps_column_2_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "PARENTS");
+          it.printf(temps_column_2_center_x, level_2_row_2_center_y, id(font_small_value), COLOR_ON, TextAlign::CENTER, "%0.1f °F", id(downstairs_temp).state);
+          it.print(temps_column_2_center_x, level_2_row_2_label_center_y, id(font_small_label), COLOR_ON, TextAlign::BASELINE_CENTER, "DOWNSTAIRS");
 
           // END INDOOR SECTION
 
