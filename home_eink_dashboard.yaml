@@ -560,7 +560,7 @@ display:
               { "pouring", "\U000F0596"},             
               { "rainy", "\U000F0597" },                
               { "snowy", "\U000F0598" },               
-              { "snowyrainy", "\U000F067F" },           
+              { "snowy-rainy", "\U000F067F" },           
               { "sunny", "\U000F0599" },                  
               { "windy", "\U000F059D" },               
               { "windyvariant", "\U000F059E" }         
