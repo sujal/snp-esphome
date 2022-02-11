@@ -20,8 +20,10 @@ sensor:
       mode: INPUT_PULLUP
     temperature:
       name: "Entertainment Cabinet Temperature"
+      device_class: temperature
     humidity:
       name: "Entertainment Cabinet Humidity"
+      device_class: humidity
     update_interval: 60s
 
 
