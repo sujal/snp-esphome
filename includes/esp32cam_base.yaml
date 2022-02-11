@@ -2,10 +2,11 @@ esphome:
   name: ${device_name}
   platform: ESP32
   board: esp32cam
-  
+
 web_server:
   port: 80
 
 time:
   - platform: homeassistant
     id: homeassistant_time
+
