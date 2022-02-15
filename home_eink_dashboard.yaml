@@ -78,12 +78,12 @@ font:
     id: font_value
     size: 56    
     glyphs: |-
-      £#$!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      £#$!"’%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Medium.ttf"
     id: font_footer
     size: 28    
     glyphs: |-
-      !#$"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+      !#$"’%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
   - file: "font/OpenSans/OpenSans-Bold.ttf"
     id: font_calendar_time_label
     size: 24
