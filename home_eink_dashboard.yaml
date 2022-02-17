@@ -388,15 +388,22 @@ sensor:
     id: batt_volt
     voltage:
       name: "Battery Voltage"
+      on_value:
+        then:
+          - sensor.template.publish:
+              id: batt
+              state: !lambda |-
+                int y = ((id(batt_volt).voltage->state-3.3)/(4.1-3.3))*100;
+                // int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
+                if (y < 100) {return y;} else {return 100;};
+
+            
   - platform: template
     name: "${friendly_name} Battery"
     id: batt
     unit_of_measurement: "%"
     accuracy_decimals: 0
     device_class: battery
-    lambda: |-
-      int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
-      if (y < 100) {return y;} else {return 100;};
 
   - platform: homeassistant
     id: next_event_on_calendar
