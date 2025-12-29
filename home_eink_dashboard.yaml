@@ -14,7 +14,7 @@ globals:
     type: int
   - id: updates_since_refresh
     restore_value: yes
-    initial_value: "21"
+    initial_value: "0"
     type: int
     
 esphome:
@@ -24,6 +24,10 @@ esp32:
   board: esp32dev
   framework:
     type: arduino
+
+psram:
+  mode: quad
+  speed: 40MHz
 
 # Enable logging
 logger:
@@ -59,6 +63,7 @@ time:
 external_components:
   - source: github://sujal/esphome-lilygo-t5-47
     components: [lilygo_t5_47_display, lilygo_t5_47_battery]
+    refresh: 1s
  
 sun:
   latitude: 41.75744°
@@ -349,7 +354,8 @@ binary_sensor:
     name: "Clear Screen"
     on_press:
       then:
-        - script.execute: refresh_display
+        - lambda: id(updates_since_refresh) = 20;  # Force refresh threshold
+        - script.execute: show_page
   - platform: homeassistant
     id: prevent_sleep
     entity_id: input_boolean.prevent_deep_sleep
