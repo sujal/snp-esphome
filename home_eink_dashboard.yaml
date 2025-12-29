@@ -158,13 +158,8 @@ font:
 script:
   - id: refresh_display
     then:
-      - repeat:
-          count: 1
-          then:
-          - display.page.show: page_black
-          - component.update: t5_display
-          - display.page.show: page_white
-          - component.update: t5_display
+      - logger.log: "Performing full display clear to reduce ghosting"
+      - lambda: id(t5_display).full_clear();
       - lambda: id(updates_since_refresh) = 0;
   - id: all_data_received
     then:
@@ -457,24 +452,25 @@ sensor:
     id: downstairs_temp
     entity_id: sensor.official_downstairs_temp
     internal: true
-    on_value: # Actions to perform once data for the last sensor has been received
+    on_value:
       then:
         - logger.log: "received value for downstairs temp."
+        - script.execute: all_data_received
   - platform: homeassistant
     id: extension_temp
     entity_id: sensor.official_extension_temp
     internal: true
-    on_value: # Actions to perform once data for the last sensor has been received
+    on_value:
       then:
         - logger.log: "received value for extension temp."
+        - script.execute: all_data_received
   - platform: homeassistant
     id: parents_room_temp
     entity_id: sensor.official_parents_room_temp
     internal: true
-    on_value: # Actions to perform once data for the last sensor has been received
+    on_value:
       then:
         - logger.log: "received value for parents room temp"
-        - script.execute: all_data_received
   - platform: homeassistant
     id: weather_temperature
     entity_id: sensor.home_weather_station_temp
