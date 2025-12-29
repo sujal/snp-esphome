@@ -5,7 +5,9 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: ${device_api_password}
+  encryption:
+    key: ${device_encryption_key}
 
 ota:
-  password: ${device_ota_password}
+  - platform: esphome
+    password: ${device_ota_password}

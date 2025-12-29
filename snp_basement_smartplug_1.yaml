@@ -1,7 +1,7 @@
 substitutions:
   device_name: snp-splug-1
   device_fallback_ap_password: !secret basement_smartplug_1_fallback_ap_password
-  device_api_password: !secret basement_smartplug_1_api_password
+  device_encryption_key: !secret basement_smartplug_1_encryption_key
   device_ota_password: !secret basement_smartplug_1_ota_password
   wifi_ssid: !secret home_wifi_ssid
   wifi_password: !secret home_wifi_password

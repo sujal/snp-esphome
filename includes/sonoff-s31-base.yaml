@@ -1,6 +1,7 @@
 esphome:
   name: ${device_name}
-  platform: ESP8266
+
+esp8266:
   board: esp01_1m
 
 logger:
@@ -10,6 +11,7 @@ logger:
 uart:
   rx_pin: RX
   baud_rate: 4800
+  parity: EVEN
 
 binary_sensor:
   - platform: gpio

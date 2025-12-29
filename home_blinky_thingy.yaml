@@ -2,6 +2,7 @@ substitutions:
   device_name: snp_hbt_1
   device_fallback_ap_password: !secret hbt_device_fallback_ap_password
   device_api_password: !secret hbt_device_api_password
+  device_encryption_key: !secret hbt_device_encryption_key
   device_ota_password: !secret hbt_device_ota_password
   wifi_ssid: !secret home_wifi_ssid
   wifi_password: !secret home_wifi_password
@@ -11,9 +12,9 @@ packages:
   wifi: !include includes/wifi_common.yaml
   device_common: !include includes/device_common.yaml
 
-esphome:
-  libraries:
-    - "FastLED GFX Library"
+# esphome:
+#   libraries:
+#     - "FastLED GFX Library"
 
 api:
   services:
@@ -42,9 +43,9 @@ light:
 
 sensor:
   - platform: adc
-    pin: A13
+    pin: GPIO35
     name: "Battery Voltage"
     update_interval: 60s
-    attenuation: 11db
+    attenuation: 11dB
     filters:
       - multiply: 2
